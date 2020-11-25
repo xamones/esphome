@@ -2,7 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import automation
 from esphome.components import binary_sensor
-from esphome.const import CONF_DATA, CONF_TRIGGER_ID, CONF_NBITS, CONF_ADDRESS, \
+from esphome.const import CONF_ROLLING_CODE, CONF_CONTROL_CODE, CONF_DATA, CONF_TRIGGER_ID, CONF_NBITS, CONF_ADDRESS, \
     CONF_COMMAND, CONF_CODE, CONF_PULSE_LENGTH, CONF_SYNC, CONF_ZERO, CONF_ONE, CONF_INVERTED, \
     CONF_PROTOCOL, CONF_GROUP, CONF_DEVICE, CONF_STATE, CONF_CHANNEL, CONF_FAMILY, CONF_REPEAT, \
     CONF_WAIT_TIME, CONF_TIMES, CONF_TYPE_ID, CONF_CARRIER_FREQUENCY, CONF_RC_CODE_1, CONF_RC_CODE_2
@@ -720,3 +720,42 @@ def panasonic_action(var, config, args):
     cg.add(var.set_address(template_))
     template_ = yield cg.templatable(config[CONF_COMMAND], args, cg.uint32)
     cg.add(var.set_command(template_))
+
+# Somfy
+(SomfyData, SomfyBinarySensor, SomfyTrigger, SomfyAction,
+ SomfyDumper) = declare_protocol('Somfy')
+SOMFY_SCHEMA = cv.Schema({
+    cv.Required(CONF_ADDRESS): cv.hex_uint32_t,
+    cv.Required(CONF_CONTROL_CODE): cv.hex_uint16_t,
+    cv.Required(CONF_ROLLING_CODE): cv.hex_uint16_t,
+})
+
+
+@register_binary_sensor('somfy', SomfyBinarySensor, SOMFY_SCHEMA)
+def somfy_binary_sensor(var, config):
+    cg.add(var.set_data(cg.StructInitializer(
+        SomfyData,
+        ('address', config[CONF_ADDRESS]),
+        ('control_code', config[CONF_CONTROL_CODE]),
+        ('rolling_code', config[CONF_ROLLING_CODE]),
+    )))
+
+
+@register_trigger('somfy', SomfyTrigger, SomfyData)
+def somfy_trigger(var, config):
+    pass
+
+
+@register_dumper('somfy', SomfyDumper)
+def somfy_dumper(var, config):
+    pass
+
+
+@register_action('somfy', SomfyAction, SOMFY_SCHEMA)
+def somfy_action(var, config, args):
+    template_ = yield cg.templatable(config[CONF_ADDRESS], args, cg.uint32)
+    cg.add(var.set_address(template_))
+    template_ = yield cg.templatable(config[CONF_CONTROL_CODE], args, cg.uint16)
+    cg.add(var.set_control_code(template_))
+    template_ = yield cg.templatable(config[CONF_ROLLING_CODE], args, cg.uint16)
+    cg.add(var.set_rolling_code(template_))
